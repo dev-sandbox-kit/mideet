@@ -11,6 +11,10 @@ export interface Room {
   midpoint_station_name: string | null
   midpoint_lat: number | null
   midpoint_lng: number | null
+  midpoint_fair_station_id: string | null
+  midpoint_fair_station_name: string | null
+  midpoint_fair_lat: number | null
+  midpoint_fair_lng: number | null
 }
 
 export interface Participant {

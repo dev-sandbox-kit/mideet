@@ -8,11 +8,13 @@ import PlaceList from '@/components/PlaceList'
 import ImageDownload from '@/components/ImageDownload'
 import type { Room, Participant, KakaoPlace, PlaceCategory } from '@/types'
 
+type ResultMode = 'fastest' | 'fair'
+
 export default function ResultPage() {
   const { roomId } = useParams<{ roomId: string }>()
   const [room, setRoom] = useState<Room | null>(null)
   const [participants, setParticipants] = useState<Participant[]>([])
-  const [station, setStation] = useState<KakaoPlace | null>(null)
+  const [mode, setMode] = useState<ResultMode>('fastest')
   const [category, setCategory] = useState<PlaceCategory>('카페')
   const [places, setPlaces] = useState<KakaoPlace[]>([])
   const [placesLoading, setPlacesLoading] = useState(false)
@@ -25,38 +27,63 @@ export default function ResultPage() {
       setRoom(data)
       posthog.capture('result_viewed', { room_id: roomId })
       setParticipants(data.participants ?? [])
-
-      if (data.midpoint_station_id && data.midpoint_station_name) {
-        setStation({
-          id: data.midpoint_station_id,
-          place_name: data.midpoint_station_name,
-          category_name: '지하철역',
-          address_name: '',
-          road_address_name: '',
-          x: String(data.midpoint_lng),
-          y: String(data.midpoint_lat),
-          place_url: '',
-        })
-      }
     }
     load()
   }, [roomId])
 
+  const center = (() => {
+    if (!room) return null
+    if (mode === 'fair' && room.midpoint_fair_lat && room.midpoint_fair_lng) {
+      return { lat: room.midpoint_fair_lat, lng: room.midpoint_fair_lng }
+    }
+    if (room.midpoint_lat && room.midpoint_lng) {
+      return { lat: room.midpoint_lat, lng: room.midpoint_lng }
+    }
+    return null
+  })()
+
+  const station: KakaoPlace | null = (() => {
+    if (!room || !center) return null
+    if (mode === 'fair' && room.midpoint_fair_station_id && room.midpoint_fair_station_name) {
+      return {
+        id: room.midpoint_fair_station_id,
+        place_name: room.midpoint_fair_station_name,
+        category_name: '지하철역',
+        address_name: '',
+        road_address_name: '',
+        x: String(center.lng),
+        y: String(center.lat),
+        place_url: '',
+      }
+    }
+    if (room.midpoint_station_id && room.midpoint_station_name) {
+      return {
+        id: room.midpoint_station_id,
+        place_name: room.midpoint_station_name,
+        category_name: '지하철역',
+        address_name: '',
+        road_address_name: '',
+        x: String(center.lng),
+        y: String(center.lat),
+        place_url: '',
+      }
+    }
+    return null
+  })()
+
+  const hasFair = !!(room?.midpoint_fair_lat && room?.midpoint_fair_lng) &&
+    room.midpoint_fair_station_id !== room.midpoint_station_id
+
   useEffect(() => {
-    if (!room?.midpoint_lat || !room?.midpoint_lng) return
+    if (!center) return
     setPlacesLoading(true)
-    fetch(`/api/places?lat=${room.midpoint_lat}&lng=${room.midpoint_lng}&category=${encodeURIComponent(category)}&radius=1000`)
+    fetch(`/api/places?lat=${center.lat}&lng=${center.lng}&category=${encodeURIComponent(category)}&radius=1000`)
       .then((r) => r.json())
       .then((data) => setPlaces(data.places ?? []))
       .finally(() => setPlacesLoading(false))
-  }, [room, category])
+  }, [center?.lat, center?.lng, category])
 
   if (!room) return <div className="p-6 text-center text-gray-400">불러오는 중...</div>
-
-  const center = room.midpoint_lat && room.midpoint_lng
-    ? { lat: room.midpoint_lat, lng: room.midpoint_lng }
-    : null
-
   if (!center) return <div className="p-6 text-center text-gray-400">결과를 계산하는 중...</div>
 
   return (
@@ -66,6 +93,31 @@ export default function ResultPage() {
         <p className="text-sm text-gray-500 mb-3">
           약속 날짜: {new Date(room.appointment_date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
         </p>
+      )}
+
+      {hasFair && (
+        <div className="flex gap-2 mb-4">
+          <button
+            onClick={() => setMode('fastest')}
+            className={`flex-1 py-2 text-sm font-medium rounded-lg border transition-colors ${
+              mode === 'fastest'
+                ? 'bg-gray-900 text-white border-gray-900'
+                : 'bg-white text-gray-600 border-gray-300'
+            }`}
+          >
+            빠른 만남
+          </button>
+          <button
+            onClick={() => setMode('fair')}
+            className={`flex-1 py-2 text-sm font-medium rounded-lg border transition-colors ${
+              mode === 'fair'
+                ? 'bg-gray-900 text-white border-gray-900'
+                : 'bg-white text-gray-600 border-gray-300'
+            }`}
+          >
+            공평한 만남
+          </button>
+        </div>
       )}
 
       <div className="mb-4" id="result-map">
