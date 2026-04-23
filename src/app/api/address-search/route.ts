@@ -9,7 +9,8 @@ export async function GET(req: Request) {
   try {
     const results = await searchAddress(query)
     return NextResponse.json({ results })
-  } catch {
+  } catch (e) {
+    console.error('[address-search] Kakao API error:', e)
     return NextResponse.json({ error: 'Search failed' }, { status: 500 })
   }
 }
