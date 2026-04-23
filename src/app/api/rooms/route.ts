@@ -6,8 +6,8 @@ export async function POST(req: Request) {
   const body = await req.json()
   const { max_participants, appointment_date } = body
 
-  if (!max_participants || max_participants < 1 || max_participants > 10) {
-    return NextResponse.json({ error: 'max_participants must be 1–10' }, { status: 400 })
+  if (!max_participants || max_participants < 2 || max_participants > 10) {
+    return NextResponse.json({ error: 'max_participants must be 2–10' }, { status: 400 })
   }
 
   const id = generateRoomId()

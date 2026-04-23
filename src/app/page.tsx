@@ -40,10 +40,10 @@ export default function HomePage() {
 
       <div className="w-full max-w-sm space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-1">인원수 (최대 10명)</label>
+          <label className="block text-sm font-medium mb-1">인원수 (2~10명)</label>
           <input
             type="number"
-            min={1}
+            min={2}
             max={10}
             value={maxParticipants}
             onChange={(e) => setMaxParticipants(Number(e.target.value))}
