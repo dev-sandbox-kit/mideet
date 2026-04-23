@@ -20,42 +20,75 @@ export default function ImageDownload({ center, participants, station, places, c
     setLoading(true)
     setError('')
     try {
-      const mapUrl = buildStaticMapUrl({
-        center,
-        participants,
-        station: station ?? { id: '', place_name: '', category_name: '', address_name: '', road_address_name: '', x: String(center.lng), y: String(center.lat), place_url: '' },
-        width: 640,
-        height: 400,
-      })
-
-      const proxyUrl = `/api/static-map?url=${encodeURIComponent(mapUrl)}`
-      const imgRes = await fetch(proxyUrl)
-      if (!imgRes.ok) throw new Error(`지도 이미지를 불러올 수 없습니다. (${imgRes.status})`)
-      const blob = await imgRes.blob()
-      const mapBitmap = await createImageBitmap(blob)
-
-      const canvas = document.createElement('canvas')
       const lineHeight = 24
       const padding = 16
-      const listHeight = Math.min(places.length, 5) * lineHeight + padding * 2 + 40
+      const mapHeight = 400
+      const listHeight = Math.max(places.length, 0) > 0
+        ? Math.min(places.length, 5) * lineHeight + padding * 2 + 40
+        : 0
+
+      // Try to load the static map; fall back to a plain header if unavailable
+      let mapImg: HTMLImageElement | null = null
+      try {
+        const mapUrl = buildStaticMapUrl({
+          center,
+          participants,
+          station: station ?? { id: '', place_name: '', category_name: '', address_name: '', road_address_name: '', x: String(center.lng), y: String(center.lat), place_url: '' },
+          width: 640,
+          height: mapHeight,
+        })
+        const proxyUrl = `/api/static-map?url=${encodeURIComponent(mapUrl)}`
+        const imgRes = await fetch(proxyUrl)
+        if (imgRes.ok) {
+          const blob = await imgRes.blob()
+          const objectUrl = URL.createObjectURL(blob)
+          mapImg = await new Promise<HTMLImageElement>((resolve, reject) => {
+            const img = new Image()
+            img.onload = () => resolve(img)
+            img.onerror = reject
+            img.src = objectUrl
+          })
+          URL.revokeObjectURL(objectUrl)
+        }
+      } catch {
+        // Static map unavailable — proceed with text-only header
+      }
+
+      const canvas = document.createElement('canvas')
       canvas.width = 640
-      canvas.height = 400 + listHeight
+      canvas.height = mapHeight + listHeight
 
       const ctx = canvas.getContext('2d')!
-      ctx.drawImage(mapBitmap, 0, 0, 640, 400)
 
-      ctx.fillStyle = '#ffffff'
-      ctx.fillRect(0, 400, 640, listHeight)
+      if (mapImg) {
+        ctx.drawImage(mapImg, 0, 0, 640, mapHeight)
+      } else {
+        ctx.fillStyle = '#f3f4f6'
+        ctx.fillRect(0, 0, 640, mapHeight)
+        ctx.fillStyle = '#6b7280'
+        ctx.font = 'bold 16px sans-serif'
+        ctx.textAlign = 'center'
+        ctx.fillText('mideet — 중간지점 결과', 320, mapHeight / 2 - 10)
+        ctx.font = '13px sans-serif'
+        ctx.fillText(`위도 ${center.lat.toFixed(4)}  경도 ${center.lng.toFixed(4)}`, 320, mapHeight / 2 + 16)
+        ctx.textAlign = 'left'
+      }
 
-      ctx.fillStyle = '#111827'
-      ctx.font = 'bold 14px sans-serif'
-      ctx.fillText(`주변 ${category} 추천`, padding, 400 + padding + 16)
+      if (listHeight > 0) {
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(0, mapHeight, 640, listHeight)
 
-      ctx.font = '13px sans-serif'
-      ctx.fillStyle = '#374151'
-      places.slice(0, 5).forEach((p, i) => {
-        ctx.fillText(`${i + 1}. ${p.place_name}  ${p.road_address_name || p.address_name}`, padding, 400 + padding + 40 + i * lineHeight)
-      })
+        ctx.fillStyle = '#111827'
+        ctx.font = 'bold 14px sans-serif'
+        ctx.textAlign = 'left'
+        ctx.fillText(`주변 ${category} 추천`, padding, mapHeight + padding + 16)
+
+        ctx.font = '13px sans-serif'
+        ctx.fillStyle = '#374151'
+        places.slice(0, 5).forEach((p, i) => {
+          ctx.fillText(`${i + 1}. ${p.place_name}  ${p.road_address_name || p.address_name}`, padding, mapHeight + padding + 40 + i * lineHeight)
+        })
+      }
 
       const link = document.createElement('a')
       link.download = 'mideet-result.png'
