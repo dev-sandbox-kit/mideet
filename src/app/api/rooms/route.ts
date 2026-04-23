@@ -1,0 +1,24 @@
+import { NextResponse } from 'next/server'
+import { createServerClient } from '@/lib/supabase/server'
+import { generateRoomId } from '@/lib/room-id'
+
+export async function POST(req: Request) {
+  const body = await req.json()
+  const { max_participants, appointment_date } = body
+
+  if (!max_participants || max_participants < 1 || max_participants > 10) {
+    return NextResponse.json({ error: 'max_participants must be 1–10' }, { status: 400 })
+  }
+
+  const id = generateRoomId()
+  const supabase = createServerClient()
+
+  const { error } = await supabase.from('rooms').insert({
+    id,
+    max_participants,
+    appointment_date: appointment_date ?? null,
+  })
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ id }, { status: 201 })
+}
