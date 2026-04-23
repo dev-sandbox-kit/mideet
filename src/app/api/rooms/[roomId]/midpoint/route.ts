@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
-import { calcGeographicCenter, selectOptimalStation } from '@/lib/midpoint'
+import { calcGeographicCenter, selectFastestStation, selectFairStation } from '@/lib/midpoint'
 import { searchSubwayStations } from '@/lib/kakao/local'
 import { getTravelDuration } from '@/lib/kakao/mobility'
 import type { Participant } from '@/types'
@@ -34,6 +34,10 @@ export async function POST(_req: Request, { params }: { params: Promise<{ roomId
   let midpointLng = center.lng
   let midpointStationId: string | null = null
   let midpointStationName: string | null = null
+  let midpointFairLat: number | null = null
+  let midpointFairLng: number | null = null
+  let midpointFairStationId: string | null = null
+  let midpointFairStationName: string | null = null
   let fallback = false
 
   if (stations.length === 0) {
@@ -55,14 +59,23 @@ export async function POST(_req: Request, { params }: { params: Promise<{ roomId
       })
     )
 
-    const result = selectOptimalStation(stations, travelTimes)
-    if (result) {
-      midpointLat = parseFloat(result.station.y)
-      midpointLng = parseFloat(result.station.x)
-      midpointStationId = result.station.id
-      midpointStationName = result.station.place_name
+    const fastest = selectFastestStation(stations, travelTimes)
+    const fair = selectFairStation(stations, travelTimes)
+
+    if (fastest) {
+      midpointLat = parseFloat(fastest.station.y)
+      midpointLng = parseFloat(fastest.station.x)
+      midpointStationId = fastest.station.id
+      midpointStationName = fastest.station.place_name
     } else {
       fallback = true
+    }
+
+    if (fair) {
+      midpointFairLat = parseFloat(fair.station.y)
+      midpointFairLng = parseFloat(fair.station.x)
+      midpointFairStationId = fair.station.id
+      midpointFairStationName = fair.station.place_name
     }
   }
 
@@ -74,6 +87,10 @@ export async function POST(_req: Request, { params }: { params: Promise<{ roomId
       midpoint_lng: midpointLng,
       midpoint_station_id: midpointStationId,
       midpoint_station_name: midpointStationName,
+      midpoint_fair_lat: midpointFairLat,
+      midpoint_fair_lng: midpointFairLng,
+      midpoint_fair_station_id: midpointFairStationId,
+      midpoint_fair_station_name: midpointFairStationName,
     })
     .eq('id', roomId)
 
