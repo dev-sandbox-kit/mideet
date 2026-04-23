@@ -20,14 +20,25 @@ export async function GET(req: Request) {
 
   const res = await fetch(mapUrl, {
     headers: { Authorization: `KakaoAK ${process.env.KAKAO_REST_API_KEY}` },
+    cache: 'no-store',
   })
 
   if (!res.ok) {
-    return NextResponse.json({ error: `Kakao API error: ${res.status}` }, { status: res.status })
+    const detail = await res.text().catch(() => '')
+    return NextResponse.json(
+      { error: `Kakao API error: ${res.status}`, detail },
+      { status: res.status }
+    )
+  }
+
+  const contentType = res.headers.get('Content-Type') ?? 'image/png'
+  if (!contentType.startsWith('image/')) {
+    const detail = await res.text().catch(() => '')
+    return NextResponse.json({ error: 'Non-image response from Kakao', detail }, { status: 502 })
   }
 
   const buffer = await res.arrayBuffer()
   return new Response(buffer, {
-    headers: { 'Content-Type': res.headers.get('Content-Type') ?? 'image/png' },
+    headers: { 'Content-Type': contentType },
   })
 }
