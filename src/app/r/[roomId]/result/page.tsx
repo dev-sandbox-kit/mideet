@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useParams } from 'next/navigation'
 import posthog from 'posthog-js'
 import KakaoMap from '@/components/KakaoMap'
@@ -31,7 +31,7 @@ export default function ResultPage() {
     load()
   }, [roomId])
 
-  const center = (() => {
+  const center = useMemo(() => {
     if (!room) return null
     if (mode === 'fair' && room.midpoint_fair_lat && room.midpoint_fair_lng) {
       return { lat: room.midpoint_fair_lat, lng: room.midpoint_fair_lng }
@@ -40,9 +40,9 @@ export default function ResultPage() {
       return { lat: room.midpoint_lat, lng: room.midpoint_lng }
     }
     return null
-  })()
+  }, [room, mode])
 
-  const station: KakaoPlace | null = (() => {
+  const station = useMemo<KakaoPlace | null>(() => {
     if (!room || !center) return null
     if (mode === 'fair' && room.midpoint_fair_station_id && room.midpoint_fair_station_name) {
       return {
@@ -69,7 +69,7 @@ export default function ResultPage() {
       }
     }
     return null
-  })()
+  }, [room, center, mode])
 
   const hasFair = !!(room?.midpoint_fair_lat && room?.midpoint_fair_lng) &&
     room.midpoint_fair_station_id !== room.midpoint_station_id
