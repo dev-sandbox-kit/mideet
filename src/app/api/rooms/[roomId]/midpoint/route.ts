@@ -40,6 +40,8 @@ export async function POST(_req: Request, { params }: { params: Promise<{ roomId
   let midpointFairStationName: string | null = null
   let fallback = false
 
+  console.log(`[midpoint] roomId=${roomId} stations=(${stations.map((s) => s.place_name).join(', ') || 'none'})`)
+
   if (stations.length === 0) {
     fallback = true
   } else {
@@ -77,6 +79,10 @@ export async function POST(_req: Request, { params }: { params: Promise<{ roomId
       midpointFairStationId = fair.station.id
       midpointFairStationName = fair.station.place_name
     }
+
+    console.log(
+      `[midpoint] roomId=${roomId} fastest=${midpointStationName ?? 'fallback'} fair=${midpointFairStationName ?? '-'}`
+    )
   }
 
   const { error: updateError } = await supabase
