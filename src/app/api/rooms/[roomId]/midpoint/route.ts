@@ -55,7 +55,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ roomId
           )
         )
         const validTimes = times.filter((t): t is number => t !== null)
-        if (validTimes.length > 0) travelTimes[station.id] = validTimes
+        if (validTimes.length === times.length) travelTimes[station.id] = validTimes
       })
     )
 

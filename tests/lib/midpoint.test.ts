@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calcGeographicCenter, selectOptimalStation } from '@/lib/midpoint'
+import { calcGeographicCenter, selectOptimalStation, selectFairStation } from '@/lib/midpoint'
 import type { Participant, KakaoPlace } from '@/types'
 
 const makeParticipant = (lat: number, lng: number): Participant => ({
@@ -63,6 +63,45 @@ describe('selectOptimalStation', () => {
   it('모든 역에 이동시간 정보가 없으면 null을 반환한다', () => {
     const stations = [makeStation('A'), makeStation('B')]
     const result = selectOptimalStation(stations, {})
+    expect(result).toBeNull()
+  })
+})
+
+describe('selectFairStation', () => {
+  it('이동시간 분산이 가장 낮은 역을 선택한다', () => {
+    const stations = [makeStation('A'), makeStation('B')]
+    const travelTimes: Record<string, number[]> = {
+      A: [600, 1800],  // 합: 2400, 분산: 360000
+      B: [1000, 1400], // 합: 2400, 분산: 40000
+    }
+    const result = selectFairStation(stations, travelTimes)
+    expect(result!.station.id).toBe('B')
+  })
+
+  it('threshold 1.5 초과 역은 후보에서 제외한다', () => {
+    const stations = [makeStation('A'), makeStation('B')]
+    const travelTimes: Record<string, number[]> = {
+      A: [500, 500],   // 합: 1000 (최소)
+      B: [500, 1100],  // 합: 1600 > 1000 * 1.5 = 1500, 제외됨
+    }
+    const result = selectFairStation(stations, travelTimes)
+    expect(result!.station.id).toBe('A')
+  })
+
+  it('합계가 동일하면 분산 낮은 역 선택', () => {
+    const stations = [makeStation('A'), makeStation('B'), makeStation('C')]
+    const travelTimes: Record<string, number[]> = {
+      A: [300, 900],   // 합: 1200, 분산: 90000
+      B: [600, 600],   // 합: 1200, 분산: 0
+      C: [200, 1000],  // 합: 1200, 분산: 160000
+    }
+    const result = selectFairStation(stations, travelTimes)
+    expect(result!.station.id).toBe('B')
+  })
+
+  it('이동시간 정보가 없으면 null을 반환한다', () => {
+    const stations = [makeStation('A'), makeStation('B')]
+    const result = selectFairStation(stations, {})
     expect(result).toBeNull()
   })
 })
