@@ -11,7 +11,7 @@ export default function PlaceList({ places, loading }: Props) {
 
   return (
     <div>
-      <ul className="space-y-2">
+      <ul className="space-y-2 max-h-[260px] overflow-y-auto pr-1">
         {places.map((place) => (
           <li key={place.id} className="border rounded-lg p-3">
             <div className="flex justify-between items-start">
