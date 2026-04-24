@@ -23,5 +23,13 @@ export async function POST(req: Request) {
   })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  const { error: logError } = await supabase.from('room_logs').insert({
+    room_id: id,
+    max_participants,
+    appointment_date: appointment_date ?? null,
+  })
+  if (logError) console.error('[room_logs] insert failed', logError.message)
+
   return NextResponse.json({ id }, { status: 201 })
 }
