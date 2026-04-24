@@ -101,5 +101,17 @@ export async function POST(_req: Request, { params }: { params: Promise<{ roomId
     .eq('id', roomId)
 
   if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 })
+
+  const { error: logError } = await supabase
+    .from('room_logs')
+    .update({
+      completed_at: new Date().toISOString(),
+      actual_participants: participants.length,
+      midpoint_station_id: midpointStationId,
+      midpoint_station_name: midpointStationName,
+    })
+    .eq('room_id', roomId)
+  if (logError) console.error('[room_logs] update failed', logError.message)
+
   return NextResponse.json({ lat: midpointLat, lng: midpointLng, fallback })
 }
