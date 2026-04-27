@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import posthog from 'posthog-js'
 import { createClient } from '@/lib/supabase/client'
@@ -16,6 +16,8 @@ export default function RoomPage() {
   const [nickname, setNickname] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [calculating, setCalculating] = useState(false)
+  const calculatingRef = useRef(false)
   const [copied, setCopied] = useState(false)
 
   const fetchRoom = useCallback(async () => {
@@ -43,8 +45,15 @@ export default function RoomPage() {
   }, [roomId])
 
   const triggerMidpoint = useCallback(async () => {
+    if (calculatingRef.current) return
+    calculatingRef.current = true
+    setCalculating(true)
     const res = await fetch(`/api/rooms/${roomId}/midpoint`, { method: 'POST' })
     if (res.ok) router.push(`/r/${roomId}/result`)
+    else {
+      calculatingRef.current = false
+      setCalculating(false)
+    }
   }, [roomId, router])
 
   useEffect(() => {
@@ -119,9 +128,10 @@ export default function RoomPage() {
           {canForceStart && (
             <button
               onClick={triggerMidpoint}
-              className="w-full border border-blue-600 text-blue-600 rounded-lg py-2 text-sm"
+              disabled={calculating}
+              className="w-full border border-blue-600 text-blue-600 rounded-lg py-2 text-sm disabled:opacity-50"
             >
-              지금 결과 보기 ({participants.length}명으로 계산)
+              {calculating ? '계산 중...' : `지금 결과 보기 (${participants.length}명으로 계산)`}
             </button>
           )}
         </div>
