@@ -7,7 +7,10 @@ async function kakaoGet(path: string, params: Record<string, string>): Promise<K
   const res = await fetch(url, {
     headers: { Authorization: `KakaoAK ${process.env.KAKAO_REST_API_KEY}` },
   })
-  if (!res.ok) throw new Error(`Kakao API error: ${res.status}`)
+  if (!res.ok) {
+    const body = await res.text().catch(() => '(unreadable)')
+    throw new Error(`Kakao API error: ${res.status} — ${body} — url: ${url}`)
+  }
   const data = await res.json()
   return (data.documents ?? []) as KakaoPlace[]
 }
@@ -27,8 +30,8 @@ export function searchSubwayStations(lat: number, lng: number, radius: number): 
 }
 
 export function searchBusTerminals(lat: number, lng: number, radius: number): Promise<KakaoPlace[]> {
-  return kakaoGet('/search/category.json', {
-    category_group_code: 'BT1',
+  return kakaoGet('/search/keyword.json', {
+    query: '버스터미널',
     x: String(lng),
     y: String(lat),
     radius: String(radius),
