@@ -28,7 +28,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ roomId
   }
 
   const center = calcGeographicCenter(participants)
-  const stations = await searchSubwayStations(center.lat, center.lng, 5000)
+  const stations = (await searchSubwayStations(center.lat, center.lng, 5000)).slice(0, 3)
 
   let midpointLat = center.lat
   let midpointLng = center.lng
