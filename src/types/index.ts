@@ -1,4 +1,4 @@
-export type RoomStatus = 'waiting' | 'done'
+export type RoomStatus = 'waiting' | 'calculating' | 'done'
 
 export interface Room {
   id: string

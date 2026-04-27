@@ -40,17 +40,31 @@ export default function RoomPage() {
           setParticipants((prev) => [...prev, payload.new as Participant])
         }
       )
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` },
+        (payload) => {
+          const updated = payload.new as { status: string }
+          if (updated.status === 'calculating') setCalculating(true)
+          if (updated.status === 'done') router.push(`/r/${roomId}/result`)
+        }
+      )
       .subscribe()
     return () => { supabase.removeChannel(channel) }
-  }, [roomId])
+  }, [roomId, router])
 
   const triggerMidpoint = useCallback(async () => {
     if (calculatingRef.current) return
     calculatingRef.current = true
     setCalculating(true)
     const res = await fetch(`/api/rooms/${roomId}/midpoint`, { method: 'POST' })
-    if (res.ok) router.push(`/r/${roomId}/result`)
-    else {
+    if (res.ok) {
+      router.push(`/r/${roomId}/result`)
+    } else if (res.status === 409) {
+      const data = await res.json()
+      if (data.error === 'Already calculated') {
+        router.push(`/r/${roomId}/result`)
+      }
+      // 'Already calculating' — 실시간 구독으로 done 이벤트 대기
+    } else {
       calculatingRef.current = false
       setCalculating(false)
     }
