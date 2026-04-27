@@ -18,6 +18,7 @@ export default function ResultPage() {
   const [category, setCategory] = useState<PlaceCategory>('카페')
   const [places, setPlaces] = useState<KakaoPlace[]>([])
   const [placesLoading, setPlacesLoading] = useState(false)
+  const [selectedPlace, setSelectedPlace] = useState<KakaoPlace | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -77,6 +78,7 @@ export default function ResultPage() {
   useEffect(() => {
     if (!center) return
     setPlacesLoading(true)
+    setSelectedPlace(null)
     fetch(`/api/places?lat=${center.lat}&lng=${center.lng}&category=${encodeURIComponent(category)}&radius=1000`)
       .then((r) => r.json())
       .then((data) => setPlaces(data.places ?? []))
@@ -132,7 +134,7 @@ export default function ResultPage() {
       )}
 
       <div className="mb-4" id="result-map">
-        <KakaoMap center={center} participants={participants} station={station} />
+        <KakaoMap center={center} participants={participants} station={station} places={places} onPlaceSelect={setSelectedPlace} />
       </div>
 
       <p className="text-xs text-gray-400 mb-4">
@@ -150,6 +152,27 @@ export default function ResultPage() {
       <div className="mt-6">
         <h2 className="text-base font-semibold mb-3">주변 장소</h2>
         <CategoryFilter active={category} onChange={setCategory} />
+
+        {selectedPlace && (
+          <div className="mt-3 p-3 bg-white border border-gray-200 rounded-xl shadow-sm">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="font-semibold text-sm truncate">{selectedPlace.place_name}</p>
+                <p className="text-xs text-gray-400 mt-0.5 truncate">{selectedPlace.category_name}</p>
+                <p className="text-xs text-gray-500 mt-1 truncate">{selectedPlace.road_address_name || selectedPlace.address_name}</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {selectedPlace.place_url && (
+                  <a href={selectedPlace.place_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 underline whitespace-nowrap">
+                    상세보기
+                  </a>
+                )}
+                <button onClick={() => setSelectedPlace(null)} className="text-gray-400 hover:text-gray-600 text-lg leading-none">×</button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="mt-3">
           <PlaceList places={places} loading={placesLoading} />
         </div>
