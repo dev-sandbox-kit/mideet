@@ -60,7 +60,7 @@ export default function ResultPage() {
       return {
         id: room.midpoint_station_id,
         place_name: room.midpoint_station_name,
-        category_name: '지하철역',
+        category_name: room.midpoint_type === 'bus' ? '버스터미널' : '지하철역',
         address_name: '',
         road_address_name: '',
         x: String(center.lng),
@@ -118,6 +118,17 @@ export default function ResultPage() {
             공평한 만남
           </button>
         </div>
+      )}
+
+      {room.midpoint_type === 'bus' && (
+        <p className="text-sm text-amber-600 bg-amber-50 rounded-lg px-3 py-2 mb-3">
+          주변에 지하철역이 없어 가장 가까운 버스 터미널로 안내합니다.
+        </p>
+      )}
+      {!station && (
+        <p className="text-sm text-gray-500 bg-gray-50 rounded-lg px-3 py-2 mb-3">
+          이 지역은 대중교통 중간 지점을 찾기 어렵습니다. 지리적 중심 좌표를 표시합니다.
+        </p>
       )}
 
       <div className="mb-4" id="result-map">

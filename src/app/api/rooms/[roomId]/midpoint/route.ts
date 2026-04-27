@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { calcGeographicCenter, selectFastestStation, selectFairStation } from '@/lib/midpoint'
-import { searchSubwayStations } from '@/lib/kakao/local'
+import { searchSubwayStations, searchBusTerminals } from '@/lib/kakao/local'
 import { getTravelDuration } from '@/lib/kakao/mobility'
 import type { Participant } from '@/types'
 
@@ -34,6 +34,14 @@ export async function POST(_req: Request, { params }: { params: Promise<{ roomId
     if (stations.length > 0) break
   }
 
+  let busTerminal: Awaited<ReturnType<typeof searchBusTerminals>>[number] | null = null
+  if (stations.length === 0) {
+    for (const radius of [5000, 10000, 15000]) {
+      const terminals = await searchBusTerminals(center.lat, center.lng, radius)
+      if (terminals.length > 0) { busTerminal = terminals[0]; break }
+    }
+  }
+
   let midpointLat = center.lat
   let midpointLng = center.lng
   let midpointStationId: string | null = null
@@ -43,10 +51,17 @@ export async function POST(_req: Request, { params }: { params: Promise<{ roomId
   let midpointFairStationId: string | null = null
   let midpointFairStationName: string | null = null
   let fallback = false
+  let midpointType: 'subway' | 'bus' | null = null
 
-  console.log(`[midpoint] roomId=${roomId} stations=(${stations.map((s) => s.place_name).join(', ') || 'none'})`)
+  console.log(`[midpoint] roomId=${roomId} stations=(${stations.map((s) => s.place_name).join(', ') || 'none'}) busTerminal=${busTerminal?.place_name ?? 'none'}`)
 
-  if (stations.length === 0) {
+  if (busTerminal && stations.length === 0) {
+    midpointLat = parseFloat(busTerminal.y)
+    midpointLng = parseFloat(busTerminal.x)
+    midpointStationId = busTerminal.id
+    midpointStationName = busTerminal.place_name
+    midpointType = 'bus'
+  } else if (stations.length === 0) {
     fallback = true
   } else {
     const travelTimes: Record<string, number[]> = {}
@@ -73,6 +88,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ roomId
       midpointLng = parseFloat(fastest.station.x)
       midpointStationId = fastest.station.id
       midpointStationName = fastest.station.place_name
+      midpointType = 'subway'
     } else {
       fallback = true
     }
@@ -101,6 +117,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ roomId
       midpoint_fair_lng: midpointFairLng,
       midpoint_fair_station_id: midpointFairStationId,
       midpoint_fair_station_name: midpointFairStationName,
+      midpoint_type: midpointType,
     })
     .eq('id', roomId)
 
