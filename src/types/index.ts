@@ -15,6 +15,7 @@ export interface Room {
   midpoint_fair_station_name: string | null
   midpoint_fair_lat: number | null
   midpoint_fair_lng: number | null
+  midpoint_type: 'subway' | 'bus' | null
 }
 
 export interface Participant {

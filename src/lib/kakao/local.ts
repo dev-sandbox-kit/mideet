@@ -26,6 +26,16 @@ export function searchSubwayStations(lat: number, lng: number, radius: number): 
   })
 }
 
+export function searchBusTerminals(lat: number, lng: number, radius: number): Promise<KakaoPlace[]> {
+  return kakaoGet('/search/category.json', {
+    category_group_code: 'BT1',
+    x: String(lng),
+    y: String(lat),
+    radius: String(radius),
+    size: '5',
+  })
+}
+
 export function searchPlacesByCategory(
   lat: number,
   lng: number,
