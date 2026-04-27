@@ -14,6 +14,15 @@ interface Props {
   station: KakaoPlace | null
 }
 
+const PIN_COLORS = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316']
+
+function makeParticipantOverlay(nickname: string, color: string): string {
+  return `<div style="display:flex;flex-direction:column;align-items:center;cursor:default">
+    <div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.35)"></div>
+    <span style="margin-top:3px;font-size:11px;font-weight:700;color:${color};background:white;padding:1px 5px;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,0.2);white-space:nowrap">${nickname}</span>
+  </div>`
+}
+
 export default function KakaoMap({ center, participants, station }: Props) {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<any>(null)
@@ -54,27 +63,35 @@ export default function KakaoMap({ center, participants, station }: Props) {
         iw.open(map, stationMarker)
         overlaysRef.current.push(stationMarker, iw)
 
-        participants.forEach((p) => {
+        participants.forEach((p, i) => {
+          const color = PIN_COLORS[i % PIN_COLORS.length]
           const pos = new maps.LatLng(p.lat, p.lng)
-          const marker = new maps.Marker({ map, position: pos, title: p.nickname })
+          const overlay = new maps.CustomOverlay({
+            map,
+            position: pos,
+            content: makeParticipantOverlay(p.nickname, color),
+            yAnchor: 0,
+          })
           const polyline = new maps.Polyline({
             map,
             path: [pos, stationPos],
             strokeWeight: 2,
-            strokeColor: '#EF4444',
-            strokeOpacity: 0.7,
+            strokeColor: color,
+            strokeOpacity: 0.6,
             strokeStyle: 'solid',
           })
-          overlaysRef.current.push(marker, polyline)
+          overlaysRef.current.push(overlay, polyline)
         })
       } else {
-        participants.forEach((p) => {
-          const marker = new maps.Marker({
+        participants.forEach((p, i) => {
+          const color = PIN_COLORS[i % PIN_COLORS.length]
+          const overlay = new maps.CustomOverlay({
             map,
             position: new maps.LatLng(p.lat, p.lng),
-            title: p.nickname,
+            content: makeParticipantOverlay(p.nickname, color),
+            yAnchor: 0,
           })
-          overlaysRef.current.push(marker)
+          overlaysRef.current.push(overlay)
         })
       }
     }
