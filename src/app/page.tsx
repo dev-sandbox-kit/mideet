@@ -41,14 +41,25 @@ export default function HomePage() {
       <div className="w-full max-w-sm space-y-4">
         <div>
           <label className="block text-sm font-medium mb-1">인원수 (2~10명)</label>
-          <input
-            type="number"
-            min={2}
-            max={10}
-            value={maxParticipants}
-            onChange={(e) => setMaxParticipants(Number(e.target.value))}
-            className="w-full border rounded-lg px-3 py-2 text-sm"
-          />
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setMaxParticipants((n) => Math.max(2, n - 1))}
+              disabled={maxParticipants <= 2}
+              className="w-9 h-9 rounded-full border text-lg font-medium disabled:opacity-30"
+            >
+              −
+            </button>
+            <span className="w-8 text-center font-medium">{maxParticipants}</span>
+            <button
+              type="button"
+              onClick={() => setMaxParticipants((n) => Math.min(10, n + 1))}
+              disabled={maxParticipants >= 10}
+              className="w-9 h-9 rounded-full border text-lg font-medium disabled:opacity-30"
+            >
+              +
+            </button>
+          </div>
         </div>
 
         <div>
