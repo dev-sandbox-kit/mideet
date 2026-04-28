@@ -5,6 +5,10 @@ import posthog from 'posthog-js'
 import { createClient } from '@/lib/supabase/client'
 import AddressSearch from '@/components/AddressSearch'
 import ParticipantList from '@/components/ParticipantList'
+import EmptyRoomScene from '@/components/mascot/EmptyRoomScene'
+import WaitingScene from '@/components/mascot/WaitingScene'
+import MeetingAnimation from '@/components/mascot/MeetingAnimation'
+import SadPinScene from '@/components/mascot/SadPinScene'
 import type { Room, Participant, KakaoPlace } from '@/types'
 
 export default function RoomPage() {
@@ -64,7 +68,6 @@ export default function RoomPage() {
       if (data.error === 'Already calculated') {
         router.push(`/r/${roomId}/result`)
       }
-      // 'Already calculating' — 실시간 구독으로 done 이벤트 대기
     } else {
       calculatingRef.current = false
       setCalculating(false)
@@ -108,63 +111,111 @@ export default function RoomPage() {
   }
 
   const canForceStart = participants.length >= 2 && !submitted
+  const remaining = (room?.max_participants ?? 0) - participants.length
+  const selfIndex = participants.length - 1
+  const isAlone = participants.length === 1
+  const allDone = room && participants.length >= room.max_participants
 
-  if (!room) return <div className="p-6 text-center text-gray-400">불러오는 중...</div>
+  if (!room) {
+    return (
+      <main className="min-h-screen flex items-center justify-center text-ink-mute text-body">
+        불러오는 중...
+      </main>
+    )
+  }
+
+  if (calculating && allDone) {
+    return (
+      <main className="min-h-screen flex flex-col items-center justify-center px-4">
+        <MeetingAnimation />
+        <p className="text-title text-ink mt-6">중간지점을 찾고 있어요</p>
+        <p className="text-body text-ink-mute mt-2">잠시만 기다려주세요</p>
+      </main>
+    )
+  }
 
   return (
-    <main className="min-h-screen p-6 max-w-md mx-auto">
-      <h1 className="text-2xl font-bold mb-1">약속 잡기</h1>
-      {room.appointment_date && (
-        <p className="text-sm text-gray-500 mb-4">
-          약속 날짜: {new Date(room.appointment_date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
-        </p>
-      )}
+    <main className="min-h-screen px-4 py-6 max-w-md mx-auto">
+      <header className="flex items-baseline justify-between mb-6">
+        <h1 className="text-title text-ink">약속 잡기</h1>
+        {room.appointment_date && (
+          <span className="text-caption text-ink-mute">
+            {new Date(room.appointment_date).toLocaleDateString('ko-KR', {
+              month: 'long', day: 'numeric', weekday: 'short',
+            })}
+          </span>
+        )}
+      </header>
 
-      <button onClick={copyLink} className="w-full border rounded-lg py-2 text-sm mb-6">
-        {copied ? '링크 복사됨!' : '링크 복사하기'}
+      <button
+        onClick={copyLink}
+        className="w-full bg-surface-card rounded-lg shadow-md p-4 mb-6 flex items-center gap-3 text-left active:scale-[0.98] transition-transform"
+      >
+        <span className="w-10 h-10 rounded-md bg-primary-100 flex items-center justify-center text-lg flex-shrink-0">
+          📤
+        </span>
+        <span className="flex-1">
+          <span className="block text-body font-bold text-ink">
+            {copied ? '링크 복사됨!' : '친구 초대 링크 복사'}
+          </span>
+          <span className="block text-caption text-ink-mute mt-0.5">
+            카톡으로 보내세요
+          </span>
+        </span>
+        <span className="text-primary text-xl">›</span>
       </button>
 
-      <div className="mb-6">
-        <ParticipantList participants={participants} maxParticipants={room.max_participants} />
-      </div>
+      {isAlone && !submitted && <EmptyRoomScene />}
+      {!isAlone && (
+        <div className="mb-6">
+          <ParticipantList participants={participants} maxParticipants={room.max_participants} />
+        </div>
+      )}
 
       {!submitted ? (
-        <div className="space-y-3">
+        <div className="flex flex-col gap-2 mt-6">
           <input
             value={nickname}
             onChange={(e) => setNickname(e.target.value)}
             placeholder="닉네임 (선택)"
-            className="w-full border rounded-lg px-3 py-2 text-sm"
+            className="w-full bg-surface-card rounded-lg shadow-sm px-3.5 py-3 text-body text-ink placeholder:text-ink-mute focus:outline-none focus:ring-2 focus:ring-primary transition-shadow"
           />
           <AddressSearch onSelect={setSelectedPlace} />
           {selectedPlace && (
-            <p className="text-xs text-green-600">선택됨: {selectedPlace.place_name || selectedPlace.address_name}</p>
+            <p className="text-caption text-primary-700 px-1">
+              ✓ {selectedPlace.place_name || selectedPlace.address_name}
+            </p>
           )}
           <button
             onClick={handleSubmit}
             disabled={!selectedPlace || loading}
-            className="w-full bg-blue-600 text-white rounded-lg py-3 font-medium disabled:opacity-50"
+            className="w-full bg-primary text-white rounded-lg py-3.5 text-body font-bold shadow-cta hover:bg-primary-hover transition-colors disabled:opacity-50 mt-2"
           >
             {loading ? '등록 중...' : '입력 완료'}
           </button>
           {calcError && (
-            <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2">{calcError}</p>
+            <SadPinScene
+              message={calcError}
+              onRetry={() => { setCalcError(null); triggerMidpoint() }}
+              retryLabel={calculating ? '계산 중...' : '다시 시도'}
+            />
           )}
           {canForceStart && (
             <button
               onClick={() => { setCalcError(null); triggerMidpoint() }}
               disabled={calculating}
-              className="w-full border border-blue-600 text-blue-600 rounded-lg py-2 text-sm disabled:opacity-50"
+              className="w-full bg-primary-100 text-primary-700 rounded-lg py-2.5 text-body font-bold disabled:opacity-50 mt-1"
             >
-              {calculating ? '계산 중...' : `지금 결과 보기 (${participants.length}명으로 계산)`}
+              {calculating ? '계산 중...' : `지금 결과 보기 (${participants.length}명)`}
             </button>
           )}
         </div>
       ) : (
-        <div className="text-center text-gray-500 py-8">
-          <p className="font-medium">위치 입력 완료!</p>
-          <p className="text-sm mt-1">다른 참여자들의 입력을 기다리는 중...</p>
-        </div>
+        <WaitingScene
+          selfIndex={selfIndex}
+          selfNickname={nickname}
+          remaining={remaining}
+        />
       )}
     </main>
   )
