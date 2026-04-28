@@ -71,28 +71,28 @@
   --text-number--line-height: 1;
 }
 
-/* Dark Mode — 시스템 자동 전환 */
-@media (prefers-color-scheme: dark) {
-  @theme {
-    --color-primary: #2dd4a8;
-    --color-primary-hover: #11b289;
-    --color-primary-100: #1a3a30;
-    --color-primary-700: #c4e8d8;
-    --color-ink: #e8f0ec;
-    --color-ink-mute: #8da39a;
-    --color-surface: #0a1410;
-    --color-surface-card: #14201c;
-    --color-border: #1c2a25;
+/* Dark Mode — html.dark 클래스 기반 수동 전환 (기본은 light) */
+html.dark {
+  --color-primary: #2dd4a8;
+  --color-primary-hover: #11b289;
+  --color-primary-100: #1a3a30;
+  --color-primary-700: #c4e8d8;
+  --color-ink: #e8f0ec;
+  --color-ink-mute: #8da39a;
+  --color-surface: #0a1410;
+  --color-surface-card: #14201c;
+  --color-border: #1c2a25;
 
-    --color-pin-blue: #7fbcd6;
-    --color-pin-orange: #f3a378;
-    --color-pin-green: #95d699;
+  --color-pin-blue: #7fbcd6;
+  --color-pin-orange: #f3a378;
+  --color-pin-green: #95d699;
 
-    --shadow-sm: none;
-    --shadow-md: none;
-    --shadow-lg: none;
-    --shadow-cta: 0 6px 16px rgba(45, 212, 168, 0.25);
-  }
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-cta: 0 6px 16px rgba(45, 212, 168, 0.25);
+
+  color-scheme: dark;
 }
 
 /* 글로벌 base */
