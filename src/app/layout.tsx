@@ -2,12 +2,15 @@ import type { Metadata } from 'next'
 import Script from 'next/script'
 import { Analytics } from '@vercel/analytics/react'
 import PostHogProvider from '@/components/PostHogProvider'
+import ThemeToggle from '@/components/ThemeToggle'
 import './globals.css'
 
 export const metadata: Metadata = {
   title: 'mideet — 중간지점 약속 잡기',
   description: '여러 곳에서 만나는 사람들을 위한 중간지점 약속 서비스',
 }
+
+const themeInitScript = `(function(){try{if(localStorage.getItem('theme')==='dark'){document.documentElement.classList.add('dark')}}catch(e){}})();`
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -17,6 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
           href="https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/variable/woff2/SUIT-Variable.css"
         />
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="font-suit antialiased bg-surface text-ink">
         <Script
@@ -24,6 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           strategy="afterInteractive"
         />
         <PostHogProvider>
+          <ThemeToggle />
           {children}
           <Analytics />
         </PostHogProvider>
