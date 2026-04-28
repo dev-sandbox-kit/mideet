@@ -13,7 +13,7 @@ export async function POST(req: Request) {
   const id = generateRoomId()
   const supabase = createServerClient()
 
-  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+  const expiresAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()
 
   const { error } = await supabase.from('rooms').insert({
     id,
