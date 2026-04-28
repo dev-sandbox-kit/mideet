@@ -18,6 +18,7 @@ export default function RoomPage() {
   const [loading, setLoading] = useState(false)
   const [calculating, setCalculating] = useState(false)
   const calculatingRef = useRef(false)
+  const [calcError, setCalcError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
   const fetchRoom = useCallback(async () => {
@@ -67,6 +68,13 @@ export default function RoomPage() {
     } else {
       calculatingRef.current = false
       setCalculating(false)
+      const data = await res.json().catch(() => ({}))
+      const msg = data?.error ?? ''
+      if (msg.includes('limit') || msg.includes('exceeded')) {
+        setCalcError('Kakao API 요청이 일시적으로 제한됐어요. 잠시 후 다시 시도해주세요.')
+      } else {
+        setCalcError('중간지점 계산에 실패했어요. 다시 시도해주세요.')
+      }
     }
   }, [roomId, router])
 
@@ -139,9 +147,12 @@ export default function RoomPage() {
           >
             {loading ? '등록 중...' : '입력 완료'}
           </button>
+          {calcError && (
+            <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2">{calcError}</p>
+          )}
           {canForceStart && (
             <button
-              onClick={triggerMidpoint}
+              onClick={() => { setCalcError(null); triggerMidpoint() }}
               disabled={calculating}
               className="w-full border border-blue-600 text-blue-600 rounded-lg py-2 text-sm disabled:opacity-50"
             >
