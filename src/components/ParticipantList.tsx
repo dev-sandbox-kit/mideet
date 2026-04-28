@@ -1,4 +1,6 @@
 import type { Participant } from '@/types'
+import Pin from './pin/Pin'
+import { getPinColor } from './pin/pin-colors'
 
 interface Props {
   participants: Participant[]
@@ -6,28 +8,41 @@ interface Props {
 }
 
 export default function ParticipantList({ participants, maxParticipants }: Props) {
+  const ratio = maxParticipants > 0 ? participants.length / maxParticipants : 0
+
   return (
-    <div>
-      <div className="flex justify-between items-center mb-2">
-        <span className="text-sm font-medium">참여 현황</span>
-        <span className="text-sm text-blue-600 font-bold">
-          {participants.length} / {maxParticipants}명 입력 완료
+    <div className="bg-surface-card rounded-lg shadow-md p-4">
+      <div className="flex items-baseline justify-between mb-3">
+        <span className="text-number text-primary">
+          {participants.length}
+          <span className="text-base text-ink-mute font-semibold ml-1">
+            / {maxParticipants}명
+          </span>
+        </span>
+        <span className="text-caption text-ink-mute">
+          {participants.length}명 입력 완료
         </span>
       </div>
-      <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
+
+      <div className="w-full h-1.5 bg-border rounded-full overflow-hidden mb-4">
         <div
-          className="bg-blue-600 h-2 rounded-full transition-all"
-          style={{ width: `${(participants.length / maxParticipants) * 100}%` }}
+          className="h-full bg-primary rounded-full transition-[width] duration-300 ease-out"
+          style={{ width: `${ratio * 100}%` }}
         />
       </div>
-      <ul className="space-y-1">
-        {participants.map((p) => (
-          <li key={p.id} className="text-sm flex items-center gap-2">
-            <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs flex items-center justify-center font-bold">
-              {p.nickname.slice(0, 1)}
-            </span>
-            <span className="font-medium">{p.nickname}</span>
-            <span className="text-gray-400 text-xs">{p.address_name}</span>
+
+      <ul className="flex flex-col gap-2">
+        {participants.map((p, i) => (
+          <li key={p.id} className="flex items-center gap-2.5 text-body">
+            <Pin color={getPinColor(i, p.nickname)} size="md" aria-label={`${p.nickname} 핀`} />
+            <span className="font-bold text-ink">{p.nickname || `참여자${i + 1}`}</span>
+            <span className="text-ink-mute text-caption">· {p.address_name}</span>
+          </li>
+        ))}
+        {Array.from({ length: maxParticipants - participants.length }).map((_, i) => (
+          <li key={`empty-${i}`} className="flex items-center gap-2.5 text-body opacity-50">
+            <Pin color="#d0d6d3" size="md" />
+            <span className="text-ink-mute">대기 중...</span>
           </li>
         ))}
       </ul>
