@@ -3,6 +3,15 @@ import { describe, it, expect, vi } from 'vitest'
 const roomLogsEqFn = vi.fn().mockReturnValue({ error: null })
 const roomLogsUpdateFn = vi.fn().mockReturnValue({ eq: roomLogsEqFn })
 
+const roomData = {
+  id: 'room1',
+  status: 'waiting',
+  participants: [
+    { id: 'p1', lat: 37.5, lng: 127.0, nickname: 'A', address_name: '강남구', room_id: 'room1', joined_at: '' },
+    { id: 'p2', lat: 37.6, lng: 127.1, nickname: 'B', address_name: '서초구', room_id: 'room1', joined_at: '' },
+  ],
+}
+
 vi.mock('@/lib/supabase/server', () => ({
   createServerClient: () => ({
     from: (table: string) => {
@@ -11,23 +20,26 @@ vi.mock('@/lib/supabase/server', () => ({
           update: roomLogsUpdateFn,
         }
       }
+      // rooms: supports both `.update().eq()` (await => { error })
+      // and `.update().eq().eq().select().maybeSingle()` (atomic claim).
+      const updateChain: {
+        eq: ReturnType<typeof vi.fn>
+        select: ReturnType<typeof vi.fn>
+        maybeSingle: ReturnType<typeof vi.fn>
+        then: (resolve: (v: { error: null }) => void) => void
+      } = {
+        eq: vi.fn(() => updateChain),
+        select: vi.fn(() => updateChain),
+        maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'room1' }, error: null }),
+        then: (resolve) => resolve({ error: null }),
+      }
       return {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: {
-                id: 'room1',
-                status: 'waiting',
-                participants: [
-                  { id: 'p1', lat: 37.5, lng: 127.0, nickname: 'A', address_name: '강남구', room_id: 'room1', joined_at: '' },
-                  { id: 'p2', lat: 37.6, lng: 127.1, nickname: 'B', address_name: '서초구', room_id: 'room1', joined_at: '' },
-                ],
-              },
-              error: null,
-            }),
+            single: vi.fn().mockResolvedValue({ data: roomData, error: null }),
           }),
         }),
-        update: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ error: null }) }),
+        update: vi.fn().mockReturnValue(updateChain),
       }
     },
   }),
