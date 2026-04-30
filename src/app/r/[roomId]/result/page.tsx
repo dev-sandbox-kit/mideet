@@ -6,7 +6,8 @@ import KakaoMap from '@/components/KakaoMap'
 import CategoryFilter from '@/components/CategoryFilter'
 import PlaceList from '@/components/PlaceList'
 import ImageDownload from '@/components/ImageDownload'
-import type { Room, Participant, KakaoPlace, PlaceCategory } from '@/types'
+import type { Room, Participant, KakaoPlace, PlaceCategory, Station } from '@/types'
+import { PLACES_DEFAULT_RADIUS_M } from '@/lib/constants'
 
 type ResultMode = 'fastest' | 'fair'
 
@@ -43,30 +44,24 @@ export default function ResultPage() {
     return null
   }, [room, mode])
 
-  const station = useMemo<KakaoPlace | null>(() => {
+  const station = useMemo<Station | null>(() => {
     if (!room || !center) return null
     if (mode === 'fair' && room.midpoint_fair_station_id && room.midpoint_fair_station_name) {
       return {
         id: room.midpoint_fair_station_id,
-        place_name: room.midpoint_fair_station_name,
-        category_name: '지하철역',
-        address_name: '',
-        road_address_name: '',
-        x: String(center.lng),
-        y: String(center.lat),
-        place_url: '',
+        name: room.midpoint_fair_station_name,
+        lat: center.lat,
+        lng: center.lng,
+        type: 'subway',
       }
     }
     if (room.midpoint_station_id && room.midpoint_station_name) {
       return {
         id: room.midpoint_station_id,
-        place_name: room.midpoint_station_name,
-        category_name: room.midpoint_type === 'bus' ? '버스터미널' : '지하철역',
-        address_name: '',
-        road_address_name: '',
-        x: String(center.lng),
-        y: String(center.lat),
-        place_url: '',
+        name: room.midpoint_station_name,
+        lat: center.lat,
+        lng: center.lng,
+        type: room.midpoint_type ?? 'subway',
       }
     }
     return null
@@ -79,7 +74,7 @@ export default function ResultPage() {
     if (!center) return
     setPlacesLoading(true)
     setSelectedPlace(null)
-    fetch(`/api/places?lat=${center.lat}&lng=${center.lng}&category=${encodeURIComponent(category)}&radius=1000`)
+    fetch(`/api/places?lat=${center.lat}&lng=${center.lng}&category=${encodeURIComponent(category)}&radius=${PLACES_DEFAULT_RADIUS_M}`)
       .then((r) => r.json())
       .then((data) => setPlaces(data.places ?? []))
       .finally(() => setPlacesLoading(false))
