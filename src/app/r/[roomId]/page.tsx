@@ -34,15 +34,17 @@ export default function RoomPage() {
     if (data.status === 'done') router.push(`/r/${roomId}/result`)
   }, [roomId, router])
 
-  useEffect(() => { fetchRoom() }, [fetchRoom])
-
   useEffect(() => {
     const supabase = createClient()
     const channel = supabase
       .channel(`room:${roomId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'participants', filter: `room_id=eq.${roomId}` },
         (payload) => {
-          setParticipants((prev) => [...prev, payload.new as Participant])
+          setParticipants((prev) => {
+            const next = payload.new as Participant
+            if (prev.some((p) => p.id === next.id)) return prev
+            return [...prev, next]
+          })
         }
       )
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` },
@@ -52,9 +54,11 @@ export default function RoomPage() {
           if (updated.status === 'done') router.push(`/r/${roomId}/result`)
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') fetchRoom()
+      })
     return () => { supabase.removeChannel(channel) }
-  }, [roomId, router])
+  }, [roomId, router, fetchRoom])
 
   const triggerMidpoint = useCallback(async () => {
     if (calculatingRef.current) return
