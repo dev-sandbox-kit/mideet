@@ -1,12 +1,8 @@
 'use client'
 import { useEffect, useRef } from 'react'
 import type { Participant, KakaoPlace } from '@/types'
-
-declare global {
-  interface Window {
-    kakao: any
-  }
-}
+import type { KakaoMap as KakaoMapInstance, KakaoOverlay } from '@/types/kakao-maps'
+import { getPinColor } from './pin/pin-colors'
 
 interface Props {
   center: { lat: number; lng: number }
@@ -16,31 +12,36 @@ interface Props {
   onPlaceSelect?: (place: KakaoPlace) => void
 }
 
-const PIN_COLORS = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316']
-
-function makeParticipantOverlay(nickname: string, color: string): string {
-  return `<div style="display:flex;flex-direction:column;align-items:center;cursor:default">
+function makeParticipantOverlay(nickname: string, color: string): HTMLElement {
+  const root = document.createElement('div')
+  root.style.cssText = 'display:flex;flex-direction:column;align-items:center;cursor:default'
+  root.innerHTML = `
     <div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.35)"></div>
-    <span style="margin-top:3px;font-size:11px;font-weight:700;color:${color};background:white;padding:1px 5px;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,0.2);white-space:nowrap">${nickname}</span>
-  </div>`
+    <span style="margin-top:3px;font-size:11px;font-weight:700;color:${color};background:white;padding:1px 5px;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,0.2);white-space:nowrap"></span>
+  `
+  ;(root.querySelector('span') as HTMLSpanElement).textContent = nickname
+  return root
 }
 
-function makePlaceOverlay(name: string, idx: number): string {
-  return `<div
-    style="position:relative;display:flex;justify-content:center;cursor:pointer;width:14px;height:14px;"
-    onmouseenter="this.querySelector('.place-tooltip').style.visibility='visible'"
-    onmouseleave="this.querySelector('.place-tooltip').style.visibility='hidden'"
-    onclick="window.__mideetPlaceSelect__(${idx})"
-  >
+function makePlaceOverlay(name: string, onClick: () => void): HTMLElement {
+  const root = document.createElement('div')
+  root.style.cssText = 'position:relative;display:flex;justify-content:center;cursor:pointer;width:14px;height:14px;'
+  root.innerHTML = `
     <div style="width:10px;height:10px;border-radius:50%;background:#1F2937;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.35);margin:auto"></div>
-    <span class="place-tooltip" style="visibility:hidden;position:absolute;top:16px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:600;color:#1F2937;background:white;padding:1px 5px;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,0.2);white-space:nowrap;z-index:10">${name}</span>
-  </div>`
+    <span class="place-tooltip" style="visibility:hidden;position:absolute;top:16px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:600;color:#1F2937;background:white;padding:1px 5px;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,0.2);white-space:nowrap;z-index:10"></span>
+  `
+  const tooltip = root.querySelector('.place-tooltip') as HTMLSpanElement
+  tooltip.textContent = name
+  root.addEventListener('mouseenter', () => { tooltip.style.visibility = 'visible' })
+  root.addEventListener('mouseleave', () => { tooltip.style.visibility = 'hidden' })
+  root.addEventListener('click', onClick)
+  return root
 }
 
 export default function KakaoMap({ center, participants, station, places = [], onPlaceSelect }: Props) {
   const mapRef = useRef<HTMLDivElement>(null)
-  const mapInstanceRef = useRef<any>(null)
-  const overlaysRef = useRef<any[]>([])
+  const mapInstanceRef = useRef<KakaoMapInstance | null>(null)
+  const overlaysRef = useRef<KakaoOverlay[]>([])
   const onPlaceSelectRef = useRef(onPlaceSelect)
   useEffect(() => { onPlaceSelectRef.current = onPlaceSelect }, [onPlaceSelect])
 
@@ -63,10 +64,7 @@ export default function KakaoMap({ center, participants, station, places = [], o
 
       const map = mapInstanceRef.current
 
-      overlaysRef.current.forEach((o) => {
-        if (typeof o.close === 'function') o.close()
-        else o.setMap(null)
-      })
+      overlaysRef.current.forEach((o) => o.setMap(null))
       overlaysRef.current = []
 
       if (station) {
@@ -80,7 +78,7 @@ export default function KakaoMap({ center, participants, station, places = [], o
         overlaysRef.current.push(stationMarker, iw)
 
         participants.forEach((p, i) => {
-          const color = PIN_COLORS[i % PIN_COLORS.length]
+          const color = getPinColor(i, p.nickname)
           const pos = new maps.LatLng(p.lat, p.lng)
           const overlay = new maps.CustomOverlay({
             map,
@@ -100,7 +98,7 @@ export default function KakaoMap({ center, participants, station, places = [], o
         })
       } else {
         participants.forEach((p, i) => {
-          const color = PIN_COLORS[i % PIN_COLORS.length]
+          const color = getPinColor(i, p.nickname)
           const overlay = new maps.CustomOverlay({
             map,
             position: new maps.LatLng(p.lat, p.lng),
@@ -111,15 +109,11 @@ export default function KakaoMap({ center, participants, station, places = [], o
         })
       }
 
-      ;(window as any).__mideetPlaceSelect__ = (idx: number) => {
-        onPlaceSelectRef.current?.(places[idx])
-      }
-
-      places.forEach((place, i) => {
+      places.forEach((place) => {
         const overlay = new maps.CustomOverlay({
           map,
           position: new maps.LatLng(parseFloat(place.y), parseFloat(place.x)),
-          content: makePlaceOverlay(place.place_name, i),
+          content: makePlaceOverlay(place.place_name, () => onPlaceSelectRef.current?.(place)),
           yAnchor: 0,
         })
         overlaysRef.current.push(overlay)
