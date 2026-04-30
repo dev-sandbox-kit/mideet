@@ -2,12 +2,12 @@
 import { useState } from 'react'
 import { buildStaticMapUrl } from '@/lib/kakao/static-map'
 import posthog from 'posthog-js'
-import type { Participant, KakaoPlace, PlaceCategory } from '@/types'
+import type { Participant, KakaoPlace, PlaceCategory, Station } from '@/types'
 
 interface Props {
   center: { lat: number; lng: number }
   participants: Participant[]
-  station: KakaoPlace | null
+  station: Station | null
   places: KakaoPlace[]
   category: PlaceCategory
 }
@@ -27,13 +27,12 @@ export default function ImageDownload({ center, participants, station, places, c
         ? Math.min(places.length, 5) * lineHeight + padding * 2 + 40
         : 0
 
-      // Try to load the static map; fall back to a plain header if unavailable
       let mapImg: HTMLImageElement | null = null
       try {
         const mapUrl = buildStaticMapUrl({
           center,
           participants,
-          station: station ?? { id: '', place_name: '', category_name: '', address_name: '', road_address_name: '', x: String(center.lng), y: String(center.lat), place_url: '' },
+          station,
           width: 640,
           height: mapHeight,
         })

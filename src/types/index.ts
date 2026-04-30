@@ -42,6 +42,14 @@ export interface KakaoPlace {
 
 export type PlaceCategory = '카페' | '식당' | '술집' | '문화시설' | '쇼핑'
 
+export interface Station {
+  id: string
+  name: string
+  lat: number
+  lng: number
+  type: 'subway' | 'bus'
+}
+
 export interface MidpointResult {
   station: KakaoPlace
   travel_times: Array<{ nickname: string; duration_seconds: number }>

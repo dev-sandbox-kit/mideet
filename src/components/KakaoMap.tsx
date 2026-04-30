@@ -1,13 +1,13 @@
 'use client'
 import { useEffect, useRef } from 'react'
-import type { Participant, KakaoPlace } from '@/types'
+import type { Participant, KakaoPlace, Station } from '@/types'
 import type { KakaoMap as KakaoMapInstance, KakaoOverlay } from '@/types/kakao-maps'
 import { getPinColor } from './pin/pin-colors'
 
 interface Props {
   center: { lat: number; lng: number }
   participants: Participant[]
-  station: KakaoPlace | null
+  station: Station | null
   places?: KakaoPlace[]
   onPlaceSelect?: (place: KakaoPlace) => void
 }
@@ -68,12 +68,13 @@ export default function KakaoMap({ center, participants, station, places = [], o
       overlaysRef.current = []
 
       if (station) {
-        const stationPos = new maps.LatLng(parseFloat(station.y), parseFloat(station.x))
+        const stationPos = new maps.LatLng(station.lat, station.lng)
 
-        const stationMarker = new maps.Marker({ map, position: stationPos, title: station.place_name })
-        const iw = new maps.InfoWindow({
-          content: `<div style="padding:4px 8px;font-size:12px;font-weight:bold">${station.place_name}</div>`,
-        })
+        const stationMarker = new maps.Marker({ map, position: stationPos, title: station.name })
+        const stationLabel = document.createElement('div')
+        stationLabel.style.cssText = 'padding:4px 8px;font-size:12px;font-weight:bold;background:white;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,0.2)'
+        stationLabel.textContent = station.name
+        const iw = new maps.InfoWindow({ content: stationLabel.outerHTML })
         iw.open(map, stationMarker)
         overlaysRef.current.push(stationMarker, iw)
 

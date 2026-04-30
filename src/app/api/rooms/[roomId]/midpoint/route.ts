@@ -3,6 +3,7 @@ import { createServerClient } from '@/lib/supabase/server'
 import { calcGeographicCenter, selectFastestStation, selectFairStation } from '@/lib/midpoint'
 import { searchSubwayStations, searchBusTerminals } from '@/lib/kakao/local'
 import { getTravelDuration } from '@/lib/kakao/mobility'
+import { MIDPOINT_SEARCH_RADII } from '@/lib/constants'
 import type { Participant } from '@/types'
 
 export async function POST(_req: Request, { params }: { params: Promise<{ roomId: string }> }) {
@@ -44,14 +45,14 @@ export async function POST(_req: Request, { params }: { params: Promise<{ roomId
   try {
     const center = calcGeographicCenter(participants)
     let stations: Awaited<ReturnType<typeof searchSubwayStations>> = []
-    for (const radius of [5000, 10000, 15000]) {
+    for (const radius of MIDPOINT_SEARCH_RADII) {
       stations = (await searchSubwayStations(center.lat, center.lng, radius)).slice(0, 3)
       if (stations.length > 0) break
     }
 
     let busTerminal: Awaited<ReturnType<typeof searchBusTerminals>>[number] | null = null
     if (stations.length === 0) {
-      for (const radius of [5000, 10000, 15000]) {
+      for (const radius of MIDPOINT_SEARCH_RADII) {
         const terminals = await searchBusTerminals(center.lat, center.lng, radius)
         if (terminals.length > 0) { busTerminal = terminals[0]; break }
       }
