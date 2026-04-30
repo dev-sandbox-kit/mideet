@@ -54,6 +54,3 @@ export function selectFairStation(
   const reasonable = candidates.filter((c) => c.total_seconds <= minTotal * threshold)
   return reasonable.reduce((best, cur) => (cur.variance < best.variance ? cur : best))
 }
-
-/** @deprecated use selectFastestStation */
-export const selectOptimalStation = selectFastestStation
