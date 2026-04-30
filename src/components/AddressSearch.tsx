@@ -11,7 +11,6 @@ export default function AddressSearch({ onSelect, placeholder = '주소를 검�
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<KakaoPlace[]>([])
   const [open, setOpen] = useState(false)
-  const [selected, setSelected] = useState('')
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
   const isSelectingRef = useRef(false)
 
@@ -30,7 +29,6 @@ export default function AddressSearch({ onSelect, placeholder = '주소를 검�
 
   function handleSelect(place: KakaoPlace) {
     isSelectingRef.current = true
-    setSelected(place.place_name || place.address_name)
     setQuery(place.place_name || place.address_name)
     setOpen(false)
     onSelect(place)
@@ -40,7 +38,7 @@ export default function AddressSearch({ onSelect, placeholder = '주소를 검�
     <div className="relative">
       <input
         value={query}
-        onChange={(e) => { setQuery(e.target.value); setSelected('') }}
+        onChange={(e) => setQuery(e.target.value)}
         placeholder={placeholder}
         className="w-full border rounded-lg px-3 py-2 text-sm"
       />
