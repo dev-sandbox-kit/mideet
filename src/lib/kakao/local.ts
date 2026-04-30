@@ -6,6 +6,7 @@ async function kakaoGet(path: string, params: Record<string, string>, retries = 
   const url = `${BASE_URL}${path}?${new URLSearchParams(params)}`
   const res = await fetch(url, {
     headers: { Authorization: `KakaoAK ${process.env.KAKAO_REST_API_KEY}` },
+    signal: AbortSignal.timeout(3000),
   })
   if (!res.ok) {
     const body = await res.text().catch(() => '(unreadable)')
