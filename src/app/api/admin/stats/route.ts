@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { safeEqual } from '@/lib/auth'
 
-export const dynamic = 'force-dynamic'
-
 export async function GET(req: Request) {
   const authHeader = req.headers.get('authorization') ?? ''
   const expected = `Bearer ${process.env.ADMIN_PASSWORD ?? ''}`
