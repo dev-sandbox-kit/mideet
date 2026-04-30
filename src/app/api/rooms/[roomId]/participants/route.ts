@@ -12,39 +12,20 @@ export async function POST(req: Request, { params }: { params: Promise<{ roomId:
 
   const supabase = createServerClient()
 
-  const { data: room, error: roomError } = await supabase
-    .from('rooms')
-    .select('max_participants, status')
-    .eq('id', roomId)
-    .single()
-
-  if (roomError || !room) return NextResponse.json({ error: 'Room not found' }, { status: 404 })
-  if (room.status === 'done') return NextResponse.json({ error: 'Room is closed' }, { status: 409 })
-
-  const { data: existing, error: countError } = await supabase
-    .from('participants')
-    .select('id')
-    .eq('room_id', roomId)
-
-  if (countError) return NextResponse.json({ error: countError.message }, { status: 500 })
-
-  const currentCount = existing?.length ?? 0
-  // TOCTOU: concurrent requests may both pass this check before either inserts.
-  // Acceptable for MVP; fix with DB-level unique constraint or Postgres RPC if needed.
-  if (currentCount >= room.max_participants) {
-    return NextResponse.json({ error: 'Room is full' }, { status: 409 })
-  }
-
-  const participantNickname = nickname?.trim() || `참여자 ${currentCount + 1}`
-
-  const { error } = await supabase.from('participants').insert({
-    room_id: roomId,
-    nickname: participantNickname,
-    address_name,
-    lat,
-    lng,
+  const { data, error } = await supabase.rpc('add_participant_if_not_full', {
+    p_room_id: roomId,
+    p_nickname: nickname ?? null,
+    p_address_name: address_name,
+    p_lat: lat,
+    p_lng: lng,
   })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ ok: true }, { status: 201 })
+
+  const result = data as { id?: string; error?: string }
+  if (result.error === 'not_found') return NextResponse.json({ error: 'Room not found' }, { status: 404 })
+  if (result.error === 'closed') return NextResponse.json({ error: 'Room is closed' }, { status: 409 })
+  if (result.error === 'full') return NextResponse.json({ error: 'Room is full' }, { status: 409 })
+
+  return NextResponse.json({ ok: true, id: result.id }, { status: 201 })
 }
