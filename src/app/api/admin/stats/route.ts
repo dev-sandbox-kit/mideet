@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url)
-  if (searchParams.get('password') !== process.env.ADMIN_PASSWORD) {
+  const authHeader = req.headers.get('authorization')
+  if (authHeader !== `Bearer ${process.env.ADMIN_PASSWORD}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

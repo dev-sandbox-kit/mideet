@@ -11,7 +11,9 @@ export default function AdminPage() {
   async function handleLogin() {
     setLoading(true)
     setError('')
-    const res = await fetch(`/api/admin/stats?password=${encodeURIComponent(password)}`)
+    const res = await fetch('/api/admin/stats', {
+      headers: { Authorization: `Bearer ${password}` },
+    })
     if (!res.ok) { setError('비밀번호가 틀렸습니다.'); setLoading(false); return }
     setStats(await res.json())
     setLoading(false)
