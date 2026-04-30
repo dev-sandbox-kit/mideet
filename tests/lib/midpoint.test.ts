@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calcGeographicCenter, selectOptimalStation, selectFairStation } from '@/lib/midpoint'
+import { calcGeographicCenter, selectFastestStation, selectFairStation } from '@/lib/midpoint'
 import type { Participant, KakaoPlace } from '@/types'
 
 const makeParticipant = (lat: number, lng: number): Participant => ({
@@ -40,14 +40,15 @@ const makeStation = (id: string): KakaoPlace => ({
   place_url: '',
 })
 
-describe('selectOptimalStation', () => {
+describe('selectFastestStation', () => {
+
   it('총 이동시간 합이 가장 적은 역을 선택한다', () => {
     const stations = [makeStation('A'), makeStation('B')]
     const travelTimes: Record<string, number[]> = {
       A: [600, 1200],  // 합: 1800초
       B: [500, 500],   // 합: 1000초
     }
-    const result = selectOptimalStation(stations, travelTimes)
+    const result = selectFastestStation(stations, travelTimes)
     expect(result!.station.id).toBe('B')
   })
 
@@ -56,13 +57,13 @@ describe('selectOptimalStation', () => {
     const travelTimes: Record<string, number[]> = {
       A: [600, 900],
     }
-    const result = selectOptimalStation(stations, travelTimes)
+    const result = selectFastestStation(stations, travelTimes)
     expect(result!.station.id).toBe('A')
   })
 
   it('모든 역에 이동시간 정보가 없으면 null을 반환한다', () => {
     const stations = [makeStation('A'), makeStation('B')]
-    const result = selectOptimalStation(stations, {})
+    const result = selectFastestStation(stations, {})
     expect(result).toBeNull()
   })
 })
