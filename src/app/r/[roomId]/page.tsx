@@ -34,6 +34,9 @@ export default function RoomPage() {
     if (data.status === 'done') router.push(`/r/${roomId}/result`)
   }, [roomId, router])
 
+  const fetchRoomRef = useRef(fetchRoom)
+  useEffect(() => { fetchRoomRef.current = fetchRoom }, [fetchRoom])
+
   useEffect(() => {
     const supabase = createClient()
     const channel = supabase
@@ -55,10 +58,10 @@ export default function RoomPage() {
         }
       )
       .subscribe((status) => {
-        if (status === 'SUBSCRIBED') fetchRoom()
+        if (status === 'SUBSCRIBED') fetchRoomRef.current()
       })
     return () => { supabase.removeChannel(channel) }
-  }, [roomId, router, fetchRoom])
+  }, [roomId, router])
 
   const triggerMidpoint = useCallback(async () => {
     if (calculatingRef.current) return
