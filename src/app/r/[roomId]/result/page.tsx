@@ -5,7 +5,7 @@ import posthog from 'posthog-js'
 import KakaoMap from '@/components/KakaoMap'
 import CategoryFilter from '@/components/CategoryFilter'
 import PlaceList from '@/components/PlaceList'
-import ImageDownload from '@/components/ImageDownload'
+import CopyUrlButton from '@/components/CopyUrlButton'
 import type { Room, Participant, KakaoPlace, PlaceCategory, Station } from '@/types'
 import { PLACES_DEFAULT_RADIUS_M } from '@/lib/constants'
 
@@ -136,13 +136,7 @@ export default function ResultPage() {
         * 교통 상황(혼잡도, 막차 등)은 반영되지 않습니다. 참고용으로 활용하세요.
       </p>
 
-      <ImageDownload
-        center={center}
-        participants={participants}
-        station={station}
-        places={places}
-        category={category}
-      />
+      <CopyUrlButton />
 
       <div className="mt-6">
         <h2 className="text-base font-semibold mb-3">주변 장소</h2>
