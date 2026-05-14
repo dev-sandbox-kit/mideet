@@ -5,13 +5,15 @@ export function createLimiter(max: number) {
   return async function limit<T>(fn: () => Promise<T>): Promise<T> {
     if (active >= max) {
       await new Promise<void>((resolve) => queue.push(resolve))
+    } else {
+      active++
     }
-    active++
     try {
       return await fn()
     } finally {
-      active--
-      queue.shift()?.()
+      const next = queue.shift()
+      if (next) next()
+      else active--
     }
   }
 }
